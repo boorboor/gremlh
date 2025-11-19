@@ -1,0 +1,27 @@
+[package]
+name = "gremlh"
+version = "1.0.0"
+edition = "2021"
+description = "A CLI tool to find and fix invisible 'gremlin' characters (homoglyphs, zero-width spaces, Bidi overrides) in source code."
+license = "Apache-2.0"
+repository = "https://github.com/boorboor/gremlh"
+keywords = ["cli", "linter", "gremlins", "invisible-characters"]
+categories = ["command-line-utilities", "text-processing"]
+exclude = [".github/*"]
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.4", features = ["derive"] }
+colored = "2.0"
+ignore = "0.4"
+tempfile = "3.8"
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

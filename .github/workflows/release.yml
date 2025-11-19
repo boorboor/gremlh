@@ -1,0 +1,151 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  build-release:
+    name: Build ${{ matrix.target }}
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: gremlh
+            asset_name: gremlh-linux-amd64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: gremlh.exe
+            asset_name: gremlh-windows-amd64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: gremlh
+            asset_name: gremlh-macos-amd64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: gremlh
+            asset_name: gremlh-macos-arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build Binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Prepare Package
+        shell: bash
+        run: |
+          mkdir dist
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} dist/
+
+          cd dist
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            7z a ../${{ matrix.asset_name }}.zip ${{ matrix.artifact_name }}
+          else
+            tar -czf ../${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
+          fi
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ matrix.asset_name }}.*
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: build-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Tap
+        uses: actions/checkout@v4
+        with:
+          repository: boorboor/homebrew-gremlh
+          token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+          path: tap
+
+      - name: Download Artifacts for Hashing
+        run: |
+          VERSION=${{ github.ref_name }}
+          BASE_URL="https://github.com/boorboor/gremlh/releases/download/$VERSION"
+
+          # Download the artifacts we just uploaded
+          wget -q "$BASE_URL/gremlh-macos-amd64.tar.gz"
+          wget -q "$BASE_URL/gremlh-macos-arm64.tar.gz"
+          wget -q "$BASE_URL/gremlh-linux-amd64.tar.gz"
+
+          # Calculate SHA256 hashes
+          echo "SHA_MAC_INTEL=$(sha256sum gremlh-macos-amd64.tar.gz | cut -d ' ' -f 1)" >> $GITHUB_ENV
+          echo "SHA_MAC_ARM=$(sha256sum gremlh-macos-arm64.tar.gz | cut -d ' ' -f 1)" >> $GITHUB_ENV
+          echo "SHA_LINUX=$(sha256sum gremlh-linux-amd64.tar.gz | cut -d ' ' -f 1)" >> $GITHUB_ENV
+
+      - name: Generate Formula
+        run: |
+          VERSION=${{ github.ref_name }}
+          CLEAN_VERSION=${VERSION#v}
+
+          cat > tap/Formula/gremlh.rb <<EOF
+          class Gremlh < Formula
+            desc "CLI tool to find and fix invisible 'gremlin' characters in source code"
+            homepage "https://github.com/boorboor/gremlh"
+            version "$CLEAN_VERSION"
+            license "Apache-2.0"
+
+            if OS.mac?
+              if Hardware::CPU.arm?
+                url "https://github.com/boorboor/gremlh/releases/download/$VERSION/gremlh-macos-arm64.tar.gz"
+                sha256 "$SHA_MAC_ARM"
+              else
+                url "https://github.com/boorboor/gremlh/releases/download/$VERSION/gremlh-macos-amd64.tar.gz"
+                sha256 "$SHA_MAC_INTEL"
+              end
+            elsif OS.linux?
+              url "https://github.com/boorboor/gremlh/releases/download/$VERSION/gremlh-linux-amd64.tar.gz"
+              sha256 "$SHA_LINUX"
+            end
+
+            def install
+              bin.install "gremlh"
+            end
+
+            test do
+              (testpath/"dirty.txt").write("H\u200Bello")
+              output = shell_output("#{bin}/gremlh dirty.txt", 1)
+              assert_match "Zero Width Space", output
+            end
+          end
+          EOF
+
+      - name: Push to Tap
+        run: |
+          cd tap
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Formula/gremlh.rb
+          git commit -m "Update formula to ${{ github.ref_name }}"
+          git push origin main
