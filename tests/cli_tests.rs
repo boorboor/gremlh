@@ -78,8 +78,9 @@ fn test_file_dirty_write_atomic_replacement() -> Result<(), Box<dyn std::error::
     cmd.arg(&file_path).arg("--write");
 
     cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("fixme.txt:1:1: found"));
+        .success()
+        .stderr(predicate::str::contains("fixme.txt:1:1: found"))
+        .stderr(predicate::str::contains("All gremlins have been fixed."));
 
     let content = std::fs::read_to_string(&file_path)?;
     assert_eq!(content, "\"Hello\"\n");
@@ -102,7 +103,7 @@ fn test_character_removal_vs_replacement_write() -> Result<(), Box<dyn std::erro
     cmd.arg(&file_path).arg("--write");
 
     cmd.assert()
-        .failure()
+        .success()
         .stderr(
             predicate::str::contains("mixed.txt:1:1: found").and(predicate::str::contains("BOM")),
         )
@@ -150,7 +151,7 @@ fn test_permissions_preserved() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg(&file_path).arg("--write").arg("--verbose");
 
     cmd.assert()
-        .failure()
+        .success()
         .stderr(predicate::str::contains("warning:").not());
 
     let content = std::fs::read_to_string(&file_path)?;

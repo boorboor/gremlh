@@ -1,0 +1,59 @@
+name: Test Action Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ----------------------------------------------------------------
+      # TEST 1: Basic Execution (Should Pass on this clean repo)
+      # ----------------------------------------------------------------
+      - name: Test Basic Scan (Clean)
+        uses: ./
+        with:
+          verbose: 'true'
+          path: 'src/'
+
+      # ----------------------------------------------------------------
+      # TEST 2: Detection Logic (Should Fail)
+      # ----------------------------------------------------------------
+      - name: Create Dirty File
+        run: echo -e "Bad\u200BSpace" > dirty_test.txt
+
+      - name: Test Detection (Expect Failure)
+        id: fail_test
+        continue-on-error: true
+        uses: ./
+        with:
+          path: 'dirty_test.txt'
+          verbose: 'true'
+
+      - name: Verify Detection Failed
+        if: steps.fail_test.outcome == 'success'
+        run: |
+          echo "::error::The action should have failed on a dirty file, but it passed!"
+          exit 1
+
+      # ----------------------------------------------------------------
+      # TEST 3: Fix Logic (--write)
+      # ----------------------------------------------------------------
+      - name: Test Write/Fix
+        uses: ./
+        with:
+          path: 'dirty_test.txt'
+          write: 'true'
+
+      - name: Verify Fix
+        run: |
+          # The file should no longer contain the zero-width space (\u200B)
+          if grep -q $'\u200B' dirty_test.txt; then
+            echo "::error::File still contains gremlins after --write!"
+            exit 1
+          fi
+          echo "Fix successful!"

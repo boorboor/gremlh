@@ -50,8 +50,11 @@ fn print_summary(stats: &Arc<ScanStats>, args: &Args) -> ExitCode {
 
         if !args.write {
             eprintln!("Run with {} to fix.", "--write".cyan());
+            return ExitCode::FAILURE;
+        } else {
+            eprintln!("{}", "All gremlins have been fixed.".green().bold());
+            return ExitCode::SUCCESS;
         }
-        return ExitCode::FAILURE;
     }
 
     if args.verbose {
