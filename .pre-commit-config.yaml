@@ -1,7 +1,6 @@
 repos:
-  # Standard file fixers
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -9,7 +8,11 @@ repos:
       - id: check-yaml
       - id: check-toml
 
-  # Rust Native Hooks (runs locally via cargo)
+  # - repo: https://github.com/boorboor/gremlh
+  #   rev: v0.1.0
+  #   hooks:
+  #     - id: gremlh
+
   - repo: local
     hooks:
       - id: fmt
@@ -24,14 +27,6 @@ repos:
         name: clippy
         description: Lint rust sources
         entry: cargo clippy --all-targets --all-features -- -D warnings
-        language: system
-        types: [rust]
-        pass_filenames: false
-
-      - id: cargo-check
-        name: cargo check
-        description: Check the package for errors.
-        entry: cargo check --all
         language: system
         types: [rust]
         pass_filenames: false

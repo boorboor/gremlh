@@ -1,0 +1,65 @@
+name: 'Gremlin Hunter'
+description: 'Detects and optionally fixes invisible characters (gremlins) in source code.'
+author: 'boorboor'
+branding:
+  icon: 'search'
+  color: 'red'
+
+inputs:
+  path:
+    description: 'Path to scan'
+    required: false
+    default: '.'
+  write:
+    description: 'Fix the files in place (write changes)'
+    required: false
+    default: 'false'
+  verbose:
+    description: 'Enable verbose logging'
+    required: false
+    default: 'false'
+  no-ignore:
+    description: 'Do not respect .gitignore files'
+    required: false
+    default: 'false'
+  hidden:
+    description: 'Scan hidden files'
+    required: false
+    default: 'false'
+  token:
+    description: 'GitHub Token to fetch the binary release (automatically provided)'
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Gremlin Hunter
+      uses: taiki-e/install-action@v2
+      with:
+        tool: boorboor/gremlh
+
+    - name: Run Scan
+      shell: bash
+      run: |
+        CMD="gremlh ${{ inputs.path }}"
+
+        if [ "${{ inputs.write }}" = "true" ]; then
+          CMD="$CMD --write"
+        fi
+
+        if [ "${{ inputs.verbose }}" = "true" ]; then
+          CMD="$CMD --verbose"
+        fi
+
+        if [ "${{ inputs.no-ignore }}" = "true" ]; then
+          CMD="$CMD --no-ignore"
+        fi
+
+        if [ "${{ inputs.hidden }}" = "true" ]; then
+          CMD="$CMD --hidden"
+        fi
+
+        # Execute
+        echo "Running: $CMD"
+        $CMD
