@@ -1,6 +1,8 @@
 use clap::Parser;
-use std::io::IsTerminal;
-use std::path::{Path, PathBuf};
+use std::{
+    io::IsTerminal,
+    path::{Path, PathBuf},
+};
 
 pub const CHANNEL_CAPACITY: usize = 128;
 

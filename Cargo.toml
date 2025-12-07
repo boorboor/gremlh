@@ -9,6 +9,20 @@ keywords = ["cli", "linter", "gremlins", "invisible-characters"]
 categories = ["command-line-utilities", "text-processing"]
 exclude = [".github/*"]
 
+[build-dependencies]
+clap = { version = "4.4", features = ["derive"] }
+clap_complete = "4.4"
+clap_mangen = "0.2"
+
+[package.metadata.dist]
+inherits = "release"
+include = [
+    "target/assets/gremlh.1",
+    "target/assets/gremlh.bash",
+    "target/assets/gremlh.fish",
+    "target/assets/_gremlh"
+]
+
 [package.metadata.release]
 tag-name = "v{{version}}"
 
