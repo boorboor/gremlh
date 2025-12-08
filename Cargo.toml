@@ -9,6 +9,14 @@ keywords = ["cli", "linter", "gremlins", "invisible-characters"]
 categories = ["command-line-utilities", "text-processing"]
 exclude = [".github/*"]
 
+[lib]
+name = "gremlh"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gremlh"
+path = "src/main.rs"
+
 [build-dependencies]
 clap = { version = "4.4", features = ["derive"] }
 clap_complete = "4.4"

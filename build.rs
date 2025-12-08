@@ -15,16 +15,17 @@ fn main() -> std::io::Result<()> {
     let cmd = Args::command();
     let name = "gremlh";
 
+    // Man Pages
     let man = Man::new(cmd.clone());
     let mut buffer: Vec<u8> = Default::default();
     man.render(&mut buffer)?;
     fs::write(Path::new(out_dir).join(format!("{}.1", name)), buffer)?;
 
+    // Completions
     generate_to(Bash, &mut cmd.clone(), name, out_dir)?;
     generate_to(Zsh, &mut cmd.clone(), name, out_dir)?;
     generate_to(Fish, &mut cmd.clone(), name, out_dir)?;
 
-    println!("cargo:warning=Assets generated in {}", out_dir);
     println!("cargo:rerun-if-changed=src/args.rs");
 
     Ok(())
