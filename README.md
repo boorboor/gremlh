@@ -1,6 +1,8 @@
 # gremlh (Gremlin Hunter)
 
 [![CI](https://github.com/boorboor/gremlh/actions/workflows/ci.yml/badge.svg)](https://github.com/boorboor/gremlh/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/boorboor/gremlh/actions/workflows/audit.yml/badge.svg)](https://github.com/boorboor/gremlh/actions/workflows/audit.yml)
+[![Release](https://github.com/boorboor/gremlh/actions/workflows/release.yml/badge.svg)](https://github.com/boorboor/gremlh/actions/workflows/release.yml)
 [![Crates.io](https://img.shields.io/crates/v/gremlh.svg)](https://crates.io/crates/gremlh)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
