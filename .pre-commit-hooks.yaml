@@ -1,0 +1,17 @@
+-   id: gremlh
+    name: Gremlin Hunter
+    description: Detects invisible characters, homoglyphs.
+    entry: gremlh
+    language: rust
+    files: \.(rs|js|ts|jsx|tsx|go|py|c|cpp|h|java|rb|php|html|css|md|txt)$
+    types: [text]
+    pass_filenames: true
+
+-   id: gremlh-fix
+    name: Gremlin Hunter (Fix)
+    description: Detects and auto-fixes invisible characters.
+    entry: gremlh --write
+    language: rust
+    files: \.(rs|js|ts|jsx|tsx|go|py|c|cpp|h|java|rb|php|html|css|md|txt)$
+    types: [text]
+    pass_filenames: true

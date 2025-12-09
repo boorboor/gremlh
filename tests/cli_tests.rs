@@ -14,7 +14,9 @@ fn setup_env() -> TempDir {
 
 fn create_file(dir: &TempDir, filename: &str, content: &[u8]) {
     let path = dir.path().join(filename);
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).unwrap();
+    }
     let mut file = File::create(&path).unwrap();
     file.write_all(content).unwrap();
 }
@@ -59,6 +61,54 @@ fn test_clean_run_is_silent_success() -> Result<(), Box<dyn std::error::Error>> 
         .success()
         .stdout(predicate::str::is_empty())
         .stderr(predicate::str::is_empty());
+
+    Ok(())
+}
+
+// =============================================================================
+// Multi-Path Tests (New Feature)
+// =============================================================================
+
+#[test]
+fn test_scan_multiple_specific_files() -> Result<(), Box<dyn std::error::Error>> {
+    let env = setup_env();
+
+    create_file(&env, "clean.rs", b"fn main() {}");
+    create_file(&env, "dirty.js", "const x = \"\u{200B}\";".as_bytes());
+
+    let clean_path = env.path().join("clean.rs");
+    let dirty_path = env.path().join("dirty.js");
+
+    let mut cmd = get_cmd();
+
+    cmd.arg(&clean_path).arg(&dirty_path);
+
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("dirty.js"))
+        .stderr(predicate::str::contains("clean.rs").not());
+
+    Ok(())
+}
+
+#[test]
+fn test_scan_mixed_dir_and_file() -> Result<(), Box<dyn std::error::Error>> {
+    let env = setup_env();
+
+    create_file(&env, "src/main.rs", b"fn main() {}");
+
+    create_file(&env, "readme.txt", "Bad space\u{00A0}here".as_bytes());
+
+    let dir_path = env.path().join("src");
+    let file_path = env.path().join("readme.txt");
+
+    let mut cmd = get_cmd();
+
+    cmd.arg(&dir_path).arg(&file_path);
+
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("readme.txt"));
 
     Ok(())
 }
@@ -290,9 +340,10 @@ fn test_binary_files_skipped() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_non_existent_path_error() -> Result<(), Box<dyn std::error::Error>> {
     let bad_path = "i_do_not_exist_12345";
+    let bad_path_2 = "neither_do_i";
 
     let mut cmd = get_cmd();
-    cmd.arg(bad_path);
+    cmd.arg(bad_path).arg(bad_path_2);
 
     cmd.assert().failure().stderr(
         predicate::str::contains("error:").and(predicate::str::contains("Path does not exist")),
@@ -312,7 +363,7 @@ fn test_verbose_mode_output_files() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert()
         .failure()
-        .stderr(predicate::str::contains("Scanning path:"))
+        .stderr(predicate::str::contains("Scanning 1 path(s)..."))
         .stderr(predicate::str::contains("clean:").and(predicate::str::contains("clean.txt")))
         .stderr(predicate::str::contains("dirty.txt:1:2: found"))
         .stderr(predicate::str::contains("1 gremlins found"));

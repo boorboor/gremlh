@@ -10,7 +10,7 @@ pub const CHANNEL_CAPACITY: usize = 128;
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(default_value = ".")]
-    pub path: PathBuf,
+    pub paths: Vec<PathBuf>,
 
     #[arg(short, long)]
     pub write: bool,
@@ -35,7 +35,10 @@ impl Args {
     pub fn parse_and_finalize() -> Self {
         let mut args = Self::parse();
 
-        if args.path == Path::new(".") && !std::io::stdin().is_terminal() {
+        if args.paths.len() == 1
+            && args.paths[0] == Path::new(".")
+            && !std::io::stdin().is_terminal()
+        {
             args.is_stdin = true;
         }
 

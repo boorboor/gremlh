@@ -40,15 +40,18 @@ enum OutputDest {
 
 pub fn run(args: &Args) -> Result<Arc<ScanStats>> {
     if args.verbose && !args.is_stdin {
-        eprintln!("Scanning path: {}", args.path.display());
+        eprintln!("Scanning {} path(s)...", args.paths.len());
     }
 
     if args.is_stdin {
         return process_stdin_and_report(args);
     }
 
-    if !args.path.exists() && args.path != Path::new(".") {
-        anyhow::bail!("Path does not exist: {}", args.path.display());
+    // Validate all paths exist before starting
+    for path in &args.paths {
+        if !path.exists() && path != Path::new(".") {
+            anyhow::bail!("Path does not exist: {}", path.display());
+        }
     }
 
     scan_path_parallel(args)
@@ -98,7 +101,18 @@ fn scan_path_parallel(args: &Args) -> Result<Arc<ScanStats>> {
         })
     };
 
-    let mut builder = WalkBuilder::new(&args.path);
+    if args.paths.is_empty() {
+        anyhow::bail!("No paths provided to scan");
+    }
+
+    // Initialize builder with the first path
+    let mut builder = WalkBuilder::new(&args.paths[0]);
+
+    // Add any additional paths to the walker
+    for path in args.paths.iter().skip(1) {
+        builder.add(path);
+    }
+
     builder.git_ignore(!args.no_ignore).hidden(!args.hidden);
 
     if let Some(threads) = args.threads {
