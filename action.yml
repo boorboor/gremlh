@@ -41,25 +41,30 @@ runs:
 
     - name: Run Scan
       shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_WRITE: ${{ inputs.write }}
+        INPUT_VERBOSE: ${{ inputs.verbose }}
+        INPUT_NO_IGNORE: ${{ inputs.no-ignore }}
+        INPUT_HIDDEN: ${{ inputs.hidden }}
       run: |
-        CMD="gremlh ${{ inputs.path }}"
+        # Build the command arguments in a bash array
+        ARGS=("$INPUT_PATH")
 
-        if [ "${{ inputs.write }}" = "true" ]; then
-          CMD="$CMD --write"
+        if [ "$INPUT_WRITE" = "true" ]; then
+          ARGS+=("--write")
         fi
 
-        if [ "${{ inputs.verbose }}" = "true" ]; then
-          CMD="$CMD --verbose"
+        if [ "$INPUT_VERBOSE" = "true" ]; then
+          ARGS+=("--verbose")
         fi
 
-        if [ "${{ inputs.no-ignore }}" = "true" ]; then
-          CMD="$CMD --no-ignore"
+        if [ "$INPUT_NO_IGNORE" = "true" ]; then
+          ARGS+=("--no-ignore")
         fi
 
-        if [ "${{ inputs.hidden }}" = "true" ]; then
-          CMD="$CMD --hidden"
+        if [ "$INPUT_HIDDEN" = "true" ]; then
+          ARGS+=("--hidden")
         fi
-
-        # Execute
-        echo "Running: $CMD"
-        $CMD
+        echo "Running: gremlh ${ARGS[*]}"
+        gremlh "${ARGS[@]}"
